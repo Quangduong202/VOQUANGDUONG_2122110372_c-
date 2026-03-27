@@ -15,6 +15,6 @@ namespace connetdb.Models
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         // Navigation
-        public ICollection<Product>? Products { get; set; }
+        //public ICollection<Product>? Products { get; set; }
     }
 }

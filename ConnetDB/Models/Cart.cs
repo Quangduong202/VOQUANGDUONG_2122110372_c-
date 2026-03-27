@@ -13,6 +13,6 @@ namespace connetdb.Models
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
-        public ICollection<CartItem>? CartItems { get; set; }
+        //public ICollection<CartItem>? CartItems { get; set; }
     }
 }
