@@ -1,0 +1,6 @@
+@ConnetDB_HostAddress = http://localhost:5023
+
+GET {{ConnetDB_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
