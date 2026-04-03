@@ -1,45 +1,30 @@
-﻿using connetdb.Models;
+﻿using connetdb.Data;
+using connetdb.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 [ApiController]
 [Route("[controller]")]
 public class PaymentController : ControllerBase
 {
-    private static readonly List<Payment> Payments = new List<Payment>();
+    private readonly AppDbContext _context;
+
+    public PaymentController(AppDbContext context)
+    {
+        _context = context;
+    }
 
     [HttpGet]
-    public IEnumerable<Payment> GetAll() => Payments;
-
-    [HttpGet("{id}")]
-    public ActionResult<Payment> GetById(int id)
+    public async Task<ActionResult<IEnumerable<Payment>>> GetAll()
     {
-        var payment = Payments.Find(p => p.Id == id);
-        if (payment == null) return NotFound();
-        return payment;
+        return Ok(await _context.Payments.ToListAsync());
     }
 
     [HttpPost]
-    public ActionResult<Payment> Create(Payment payment)
+    public async Task<ActionResult<Payment>> Create(Payment payment)
     {
-        Payments.Add(payment);
-        return CreatedAtAction(nameof(GetById), new { id = payment.Id }, payment);
-    }
-
-    [HttpPut("{id}")]
-    public IActionResult Update(int id, Payment updated)
-    {
-        var index = Payments.FindIndex(p => p.Id == id);
-        if (index == -1) return NotFound();
-        Payments[index] = updated;
-        return NoContent();
-    }
-
-    [HttpDelete("{id}")]
-    public IActionResult Delete(int id)
-    {
-        var payment = Payments.Find(p => p.Id == id);
-        if (payment == null) return NotFound();
-        Payments.Remove(payment);
-        return NoContent();
+        _context.Payments.Add(payment);
+        await _context.SaveChangesAsync();
+        return Ok(payment);
     }
 }

@@ -1,45 +1,41 @@
-﻿using connetdb.Models;
+﻿using connetdb.Data;
+using connetdb.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 [ApiController]
 [Route("[controller]")]
 public class CartItemController : ControllerBase
 {
-    private static readonly List<CartItem> CartItems = new List<CartItem>();
+    private readonly AppDbContext _context;
+
+    public CartItemController(AppDbContext context)
+    {
+        _context = context;
+    }
 
     [HttpGet]
-    public IEnumerable<CartItem> GetAll() => CartItems;
-
-    [HttpGet("{id}")]
-    public ActionResult<CartItem> GetById(int id)
+    public async Task<ActionResult<IEnumerable<CartItem>>> GetAll()
     {
-        var item = CartItems.Find(ci => ci.Id == id);
-        if (item == null) return NotFound();
-        return item;
+        return Ok(await _context.CartItems.ToListAsync());
     }
 
     [HttpPost]
-    public ActionResult<CartItem> Create(CartItem item)
+    public async Task<ActionResult<CartItem>> Create(CartItem item)
     {
-        CartItems.Add(item);
-        return CreatedAtAction(nameof(GetById), new { id = item.Id }, item);
-    }
-
-    [HttpPut("{id}")]
-    public IActionResult Update(int id, CartItem updated)
-    {
-        var index = CartItems.FindIndex(ci => ci.Id == id);
-        if (index == -1) return NotFound();
-        CartItems[index] = updated;
-        return NoContent();
+        _context.CartItems.Add(item);
+        await _context.SaveChangesAsync();
+        return Ok(item);
     }
 
     [HttpDelete("{id}")]
-    public IActionResult Delete(int id)
+    public async Task<IActionResult> Delete(int id)
     {
-        var item = CartItems.Find(ci => ci.Id == id);
+        var item = await _context.CartItems.FindAsync(id);
         if (item == null) return NotFound();
-        CartItems.Remove(item);
+
+        _context.CartItems.Remove(item);
+        await _context.SaveChangesAsync();
         return NoContent();
     }
 }

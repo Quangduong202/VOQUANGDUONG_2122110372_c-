@@ -1,45 +1,78 @@
-﻿using connetdb.Models;
+﻿using connetdb.Data;
+using connetdb.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 [ApiController]
 [Route("[controller]")]
 public class ReviewController : ControllerBase
 {
-    private static readonly List<Review> Reviews = new List<Review>();
+    private readonly AppDbContext _context;
 
+    public ReviewController(AppDbContext context)
+    {
+        _context = context;
+    }
+
+    // Lấy tất cả review
     [HttpGet]
-    public IEnumerable<Review> GetAll() => Reviews;
-
-    [HttpGet("{id}")]
-    public ActionResult<Review> GetById(int id)
+    public async Task<ActionResult<IEnumerable<Review>>> GetAll()
     {
-        var review = Reviews.Find(r => r.Id == id);
-        if (review == null) return NotFound();
-        return review;
+        return Ok(await _context.Reviews
+            .Include(r => r.User)
+            .Include(r => r.Product)
+            .ToListAsync());
     }
 
+    // Tạo review mới
     [HttpPost]
-    public ActionResult<Review> Create(Review review)
+    public async Task<ActionResult<Review>> Create(Review review)
     {
-        Reviews.Add(review);
-        return CreatedAtAction(nameof(GetById), new { id = review.Id }, review);
+        _context.Reviews.Add(review);
+        await _context.SaveChangesAsync();
+        return Ok(review);
     }
 
-    [HttpPut("{id}")]
-    public IActionResult Update(int id, Review updated)
-    {
-        var index = Reviews.FindIndex(r => r.Id == id);
-        if (index == -1) return NotFound();
-        Reviews[index] = updated;
-        return NoContent();
-    }
-
+    // Xóa review theo Id
     [HttpDelete("{id}")]
-    public IActionResult Delete(int id)
+    public async Task<ActionResult> Delete(int id)
     {
-        var review = Reviews.Find(r => r.Id == id);
-        if (review == null) return NotFound();
-        Reviews.Remove(review);
-        return NoContent();
+        var review = await _context.Reviews.FindAsync(id);
+        if (review == null)
+        {
+            return NotFound(new { message = "Review not found" });
+        }
+
+        _context.Reviews.Remove(review);
+        await _context.SaveChangesAsync();
+        return Ok(new { message = "Review deleted successfully" });
+    }
+
+    // Sửa review theo Id
+    [HttpPut("{id}")]
+    public async Task<ActionResult<Review>> Update(int id, Review updatedReview)
+    {
+        if (id != updatedReview.Id)
+        {
+            return BadRequest(new { message = "ID mismatch" });
+        }
+
+        var review = await _context.Reviews.FindAsync(id);
+        if (review == null)
+        {
+            return NotFound(new { message = "Review not found" });
+        }
+
+        // Cập nhật các trường
+        review.UserId = updatedReview.UserId;
+        review.ProductId = updatedReview.ProductId;
+        review.Rating = updatedReview.Rating;
+        review.Comment = updatedReview.Comment;
+        // CreatedAt thường không sửa khi update
+
+        _context.Reviews.Update(review);
+        await _context.SaveChangesAsync();
+
+        return Ok(review);
     }
 }

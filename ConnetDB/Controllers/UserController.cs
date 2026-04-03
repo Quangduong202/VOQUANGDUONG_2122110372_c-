@@ -1,45 +1,38 @@
-﻿using connetdb.Models;
+﻿using connetdb.Data;
+using connetdb.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 [ApiController]
 [Route("[controller]")]
 public class UserController : ControllerBase
 {
-    private static readonly List<User> Users = new List<User>();
+    private readonly AppDbContext _context;
+
+    public UserController(AppDbContext context)
+    {
+        _context = context;
+    }
 
     [HttpGet]
-    public IEnumerable<User> GetAll() => Users;
+    public async Task<ActionResult<IEnumerable<User>>> GetAll()
+    {
+        return Ok(await _context.Users.ToListAsync());
+    }
 
     [HttpGet("{id}")]
-    public ActionResult<User> GetById(int id)
+    public async Task<ActionResult<User>> GetById(int id)
     {
-        var user = Users.Find(u => u.Id == id);
+        var user = await _context.Users.FindAsync(id);
         if (user == null) return NotFound();
-        return user;
+        return Ok(user);
     }
 
     [HttpPost]
-    public ActionResult<User> Create(User user)
+    public async Task<ActionResult<User>> Create(User user)
     {
-        Users.Add(user);
-        return CreatedAtAction(nameof(GetById), new { id = user.Id }, user);
-    }
-
-    [HttpPut("{id}")]
-    public IActionResult Update(int id, User updated)
-    {
-        var index = Users.FindIndex(u => u.Id == id);
-        if (index == -1) return NotFound();
-        Users[index] = updated;
-        return NoContent();
-    }
-
-    [HttpDelete("{id}")]
-    public IActionResult Delete(int id)
-    {
-        var user = Users.Find(u => u.Id == id);
-        if (user == null) return NotFound();
-        Users.Remove(user);
-        return NoContent();
+        _context.Users.Add(user);
+        await _context.SaveChangesAsync();
+        return Ok(user);
     }
 }

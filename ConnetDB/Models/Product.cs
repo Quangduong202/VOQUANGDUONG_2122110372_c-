@@ -25,8 +25,8 @@ namespace connetdb.Models
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         // Navigation
-        public ICollection<OrderItem>? OrderItems { get; set; }
-        public ICollection<CartItem>? CartItems { get; set; }
-        public ICollection<Review>? Reviews { get; set; }
+        //public ICollection<OrderItem>? OrderItems { get; set; }
+        //public ICollection<CartItem>? CartItems { get; set; }
+        //public ICollection<Review>? Reviews { get; set; }
     }
 }

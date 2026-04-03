@@ -24,3 +24,4 @@ namespace connetdb.Data
         public DbSet<Payment> Payments => Set<Payment>();
     }
 }
+

@@ -1,45 +1,30 @@
-﻿using connetdb.Models;
+﻿using connetdb.Data;
+using connetdb.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 [ApiController]
 [Route("[controller]")]
 public class OrderItemController : ControllerBase
 {
-    private static readonly List<OrderItem> OrderItems = new List<OrderItem>();
+    private readonly AppDbContext _context;
+
+    public OrderItemController(AppDbContext context)
+    {
+        _context = context;
+    }
 
     [HttpGet]
-    public IEnumerable<OrderItem> GetAll() => OrderItems;
-
-    [HttpGet("{id}")]
-    public ActionResult<OrderItem> GetById(int id)
+    public async Task<ActionResult<IEnumerable<OrderItem>>> GetAll()
     {
-        var item = OrderItems.Find(oi => oi.Id == id);
-        if (item == null) return NotFound();
-        return item;
+        return Ok(await _context.OrderItems.ToListAsync());
     }
 
     [HttpPost]
-    public ActionResult<OrderItem> Create(OrderItem item)
+    public async Task<ActionResult<OrderItem>> Create(OrderItem item)
     {
-        OrderItems.Add(item);
-        return CreatedAtAction(nameof(GetById), new { id = item.Id }, item);
-    }
-
-    [HttpPut("{id}")]
-    public IActionResult Update(int id, OrderItem updated)
-    {
-        var index = OrderItems.FindIndex(oi => oi.Id == id);
-        if (index == -1) return NotFound();
-        OrderItems[index] = updated;
-        return NoContent();
-    }
-
-    [HttpDelete("{id}")]
-    public IActionResult Delete(int id)
-    {
-        var item = OrderItems.Find(oi => oi.Id == id);
-        if (item == null) return NotFound();
-        OrderItems.Remove(item);
-        return NoContent();
+        _context.OrderItems.Add(item);
+        await _context.SaveChangesAsync();
+        return Ok(item);
     }
 }
