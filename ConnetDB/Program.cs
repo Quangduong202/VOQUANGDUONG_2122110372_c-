@@ -91,6 +91,22 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+// ===== Auto Migrate Database =====
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<AppDbContext>();
+        context.Database.Migrate();   // Tự động tạo bảng + cập nhật schema
+        Console.WriteLine("Database migrated successfully.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error migrating database: {ex.Message}");
+        // Có thể throw lại nếu muốn app crash rõ ràng
+    }
+}
 
 // ===== Swagger (luôn bật để test dễ dàng) =====
 app.UseSwagger();
