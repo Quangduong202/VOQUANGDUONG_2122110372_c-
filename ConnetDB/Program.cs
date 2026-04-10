@@ -118,11 +118,11 @@ app.UseSwaggerUI(c =>
 
 // app.UseHttpsRedirection();        // Comment hoặc bỏ vì Render free không cần HTTPS redirection
 
-//app.UseMiddleware<ExceptionMiddleware>();
+
 
 //app.UseAuthorization();
 
 app.MapControllers();
-
+app.UseMiddleware<ExceptionMiddleware>();
 // ===== Chạy ứng dụng =====
 app.Run();

@@ -2,60 +2,44 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Hosting; // Add this for IWebHostEnvironment
 
 namespace ConnetDB.Middleware
 {
     public class ExceptionMiddleware
     {
         private readonly RequestDelegate _next;
-        private readonly ILogger<ExceptionMiddleware> _logger;
+        private readonly IWebHostEnvironment _env; // Add field for environment
 
-        public ExceptionMiddleware(RequestDelegate next, ILogger<ExceptionMiddleware> logger)
+        public ExceptionMiddleware(RequestDelegate next, IWebHostEnvironment env) // Inject environment
         {
             _next = next;
-            _logger = logger;
+            _env = env;
         }
 
-        public async Task Invoke(HttpContext context)
+        public async Task InvokeAsync(HttpContext httpContext)
         {
             try
             {
-                await _next(context);
+                await _next(httpContext);
             }
             catch (Exception ex)
             {
-                await HandleExceptionAsync(context, ex);
+                Console.WriteLine($"❌ Unhandled Exception: {ex.Message}");
+                Console.WriteLine(ex.ToString());   // In đầy đủ stack trace
+
+                httpContext.Response.ContentType = "application/json";
+                httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+
+                var response = new
+                {
+                    error = "Internal Server Error",
+                    message = _env.IsDevelopment() ? ex.Message : "An error occurred",
+                    detail = _env.IsDevelopment() ? ex.ToString() : null
+                };
+
+                await httpContext.Response.WriteAsJsonAsync(response);
             }
-        }
-
-        private async Task HandleExceptionAsync(HttpContext context, Exception ex)
-        {
-            int statusCode = (int)HttpStatusCode.InternalServerError;
-            string message = "Có lỗi xảy ra, vui lòng thử lại"; // Production-safe message
-
-            // 🔥 Nếu là lỗi DB (FK, duplicate, ...)
-            if (ex is DbUpdateException dbEx)
-            {
-                statusCode = 400;
-                message = "Lỗi database: kiểm tra dữ liệu nhập";
-            }
-
-            // Log chi tiết để dev debug
-            _logger.LogError(ex, "Lỗi xử lý request {Method} {Path}",
-                context.Request.Method, context.Request.Path);
-
-            context.Response.ContentType = "application/json";
-            context.Response.StatusCode = statusCode;
-
-            var result = JsonSerializer.Serialize(new
-            {
-                status = statusCode,
-                message = message,
-                path = context.Request.Path,
-                timestamp = DateTime.UtcNow
-            });
-
-            await context.Response.WriteAsync(result);
         }
     }
 }
