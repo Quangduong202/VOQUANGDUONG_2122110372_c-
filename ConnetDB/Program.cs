@@ -64,41 +64,49 @@
 
 //app.Run();
 
-
 using Microsoft.EntityFrameworkCore;
 using connetdb.Data;
 using ConnetDB.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ===== Đăng ký DbContext với SQL Server =====
+// ===== DbContext =====
+// ⚠️ Nếu bạn dùng Supabase/PostgreSQL thì đổi UseSqlServer → UseNpgsql
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+);
 
-// ===== Đăng ký Controllers và Swagger =====
+// ===== Controllers + Swagger =====
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// ===== Build app =====
 var app = builder.Build();
 
+// ===== Auto migrate database (CHỈ CHẠY 1 LẦN KHI START APP) =====
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+}
+
 // ===== Middleware =====
-if (app.Environment.IsDevelopment() || true) // luôn bật Swagger khi deploy
+if (app.Environment.IsDevelopment() || true)
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// ❌ BỎ HTTPS khi deploy free hosting (tránh lỗi SSL)
-/// app.UseHttpsRedirection();
+// ❌ Không dùng HTTPS trên Render free hosting
+// app.UseHttpsRedirection();
 
-// Middleware xử lý lỗi
+// Custom middleware
 app.UseMiddleware<ExceptionMiddleware>();
+
+app.UseAuthorization();
 
 app.MapControllers();
 
-
-// ===== PORT ĐỘNG (QUAN TRỌNG) =====
+// ===== PORT cho Render =====
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 app.Run($"http://0.0.0.0:{port}");
