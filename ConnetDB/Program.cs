@@ -83,11 +83,11 @@ builder.Services.AddSwaggerGen();
 var app = builder.Build();
 
 // ===== Auto migrate database =====
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
-}
+//using (var scope = app.Services.CreateScope())
+//{
+//    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+//    db.Database.Migrate();
+//}
 
 // ===== Middleware =====
 if (app.Environment.IsDevelopment() || true)
