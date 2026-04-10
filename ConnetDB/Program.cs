@@ -63,17 +63,15 @@
 //app.MapControllers();
 
 //app.Run();
-
 using Microsoft.EntityFrameworkCore;
 using connetdb.Data;
 using ConnetDB.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ===== DbContext =====
-// ⚠️ Nếu bạn dùng Supabase/PostgreSQL thì đổi UseSqlServer → UseNpgsql
+// ===== DbContext (POSTGRESQL - RENDER / SUPABASE) =====
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
 
 // ===== Controllers + Swagger =====
@@ -83,7 +81,7 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// ===== Auto migrate database (CHỈ CHẠY 1 LẦN KHI START APP) =====
+// ===== Auto migrate database =====
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -97,16 +95,14 @@ if (app.Environment.IsDevelopment() || true)
     app.UseSwaggerUI();
 }
 
-// ❌ Không dùng HTTPS trên Render free hosting
-// app.UseHttpsRedirection();
+// app.UseHttpsRedirection(); // Render free thì bỏ
 
-// Custom middleware
 app.UseMiddleware<ExceptionMiddleware>();
 
 app.UseAuthorization();
 
 app.MapControllers();
 
-// ===== PORT cho Render =====
+// ===== Render PORT =====
 var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 app.Run($"http://0.0.0.0:{port}");
