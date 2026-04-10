@@ -63,6 +63,7 @@
 //app.MapControllers();
 
 //app.Run();
+
 using Microsoft.EntityFrameworkCore;
 using connetdb.Data;
 using ConnetDB.Middleware;
@@ -71,7 +72,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // ===== DbContext (POSTGRESQL - RENDER / SUPABASE) =====
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
 
 // ===== Controllers + Swagger =====
