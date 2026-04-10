@@ -68,9 +68,7 @@ using connetdb.Data;
 using ConnetDB.Middleware;
 using Microsoft.EntityFrameworkCore;
 
-usingusing Microsoft.EntityFrameworkCore;
-using ConnetDB.Data;           // sửa lại namespace cho đúng
-using ConnetDB.Middleware;     // sửa lại namespace cho đúng
+    // sửa lại namespace cho đúng
 
 var builder = WebApplication.CreateBuilder(args);
 
