@@ -64,13 +64,17 @@
 
 //app.Run();
 
-using Microsoft.EntityFrameworkCore;
 using connetdb.Data;
 using ConnetDB.Middleware;
+using Microsoft.EntityFrameworkCore;
+
+usingusing Microsoft.EntityFrameworkCore;
+using ConnetDB.Data;           // sửa lại namespace cho đúng
+using ConnetDB.Middleware;     // sửa lại namespace cho đúng
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ===== DbContext (POSTGRESQL - RENDER / SUPABASE) =====
+// ===== DbContext =====
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
 );
@@ -78,25 +82,22 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // ===== Controllers + Swagger =====
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new() { Title = "ConnetDB API", Version = "v1" });
+});
 
 var app = builder.Build();
 
-// ===== Auto migrate database =====
-//using (var scope = app.Services.CreateScope())
-//{
-//    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-//    db.Database.Migrate();
-//}
-
-// ===== Middleware =====
-if (app.Environment.IsDevelopment() || true)
+// ===== Swagger (luôn bật trên Render để test) =====
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "ConnetDB API v1");
+    c.RoutePrefix = "swagger";        // truy cập tại /swagger
+});
 
-// app.UseHttpsRedirection(); // Render free thì bỏ
+// app.UseHttpsRedirection();        // Bỏ hoặc comment khi deploy Render free
 
 app.UseMiddleware<ExceptionMiddleware>();
 
@@ -104,6 +105,6 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// ===== Render PORT =====
-var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-app.Run($"http://0.0.0.0:{port}");
+// ===== KHÔNG dùng app.Run() với port cứng =====
+// Chỉ cần để app.Run() không tham số là đủ
+app.Run();
