@@ -64,18 +64,23 @@
 
 //app.Run();
 
-using connetdb.Data;
-using ConnetDB.Middleware;
+using connetdb.Data;           // Namespace của AppDbContext
+using ConnetDB.Middleware;     // Namespace của ExceptionMiddleware
 using Microsoft.EntityFrameworkCore;
-
-    // sửa lại namespace cho đúng
+using Npgsql;                   // Thêm using này
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ===== DbContext =====
+// ===== DbContext - PostgreSQL =====
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
-);
+{
+    options.UseNpgsql(connectionString, npgsqlOptions =>
+    {
+        npgsqlOptions.EnableRetryOnFailure();   // Tự động retry khi mất kết nối (rất quan trọng trên cloud)
+    });
+});
 
 // ===== Controllers + Swagger =====
 builder.Services.AddControllers();
@@ -87,15 +92,15 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// ===== Swagger (luôn bật trên Render để test) =====
+// ===== Swagger (luôn bật để test dễ dàng) =====
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "ConnetDB API v1");
-    c.RoutePrefix = "swagger";        // truy cập tại /swagger
+    c.RoutePrefix = "swagger";        // Truy cập Swagger tại /swagger
 });
 
-// app.UseHttpsRedirection();        // Bỏ hoặc comment khi deploy Render free
+// app.UseHttpsRedirection();        // Comment hoặc bỏ vì Render free không cần HTTPS redirection
 
 app.UseMiddleware<ExceptionMiddleware>();
 
@@ -103,6 +108,5 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// ===== KHÔNG dùng app.Run() với port cứng =====
-// Chỉ cần để app.Run() không tham số là đủ
+// ===== Chạy ứng dụng =====
 app.Run();
