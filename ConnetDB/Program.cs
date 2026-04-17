@@ -116,7 +116,7 @@ app.UseCors("AllowAll");
 
 app.UseMiddleware<ExceptionMiddleware>();
 
-app.UseAuthentication();   // 🔥 BẮT BUỘC
+app.UseAuthentication();   // 🔥 BẮT BUỘCâ
 app.UseAuthorization();    // 🔥 BẮT BUỘC
 
 app.UseSwagger();
