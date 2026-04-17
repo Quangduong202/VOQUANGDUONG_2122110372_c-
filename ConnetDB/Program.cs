@@ -81,6 +81,16 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         npgsqlOptions.EnableRetryOnFailure();   // Tự động retry khi mất kết nối (rất quan trọng trên cloud)
     });
 });
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReact",
+        policy => policy
+            .WithOrigins("http://localhost:3001")
+            .AllowAnyMethod()
+            .AllowAnyHeader());
+});
+
+
 
 // ===== Controllers + Swagger =====
 builder.Services.AddControllers();
@@ -109,6 +119,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 // ===== Swagger (luôn bật để test dễ dàng) =====
+app.UseCors("AllowReact");
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
