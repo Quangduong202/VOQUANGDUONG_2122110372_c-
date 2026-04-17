@@ -1,8 +1,16 @@
 ﻿using connetdb.Data;
 using ConnetDB.Middleware;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ===== CONFIG JWT =====
+var jwtKey = builder.Configuration["Jwt:Key"] ?? "THIS_IS_SECRET_KEY_123456";
+var key = Encoding.UTF8.GetBytes(jwtKey);
 
 // ===== DbContext - PostgreSQL =====
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -15,22 +23,74 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     });
 });
 
-// ===== CORS (FIX CHUẨN) =====
+// ===== CORS =====
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll",
         policy => policy
-            .AllowAnyOrigin()   // ⚡ cho phép tất cả (dev + deploy)
+            .AllowAnyOrigin()
             .AllowAnyMethod()
             .AllowAnyHeader());
 });
 
+// ===== Authentication (JWT) =====
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = false,
+        ValidateAudience = false,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(key)
+    };
+});
+
+// ===== Authorization (Role) =====
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("UserOnly", policy => policy.RequireRole("User"));
+});
+
 // ===== Controllers + Swagger =====
 builder.Services.AddControllers();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { Title = "ConnetDB API", Version = "v1" });
+
+    // 🔥 Swagger JWT
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        In = ParameterLocation.Header,
+        Description = "Nhập: Bearer {token}",
+        Name = "Authorization",
+        Type = SecuritySchemeType.ApiKey
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
 });
 
 var app = builder.Build();
@@ -51,15 +111,14 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// ===== MIDDLEWARE (THỨ TỰ RẤT QUAN TRỌNG) =====
-
-// ⚡ CORS phải đặt sớm
+// ===== MIDDLEWARE =====
 app.UseCors("AllowAll");
 
-// ⚡ Exception middleware nên đặt trước controller
 app.UseMiddleware<ExceptionMiddleware>();
 
-// ===== Swagger =====
+app.UseAuthentication();   // 🔥 BẮT BUỘC
+app.UseAuthorization();    // 🔥 BẮT BUỘC
+
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
@@ -67,9 +126,7 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = "swagger";
 });
 
-// app.UseHttpsRedirection(); // có thể bỏ
-
-// app.UseAuthorization();
+// app.UseHttpsRedirection();
 
 app.MapControllers();
 

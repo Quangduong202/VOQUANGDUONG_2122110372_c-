@@ -2,48 +2,86 @@
 using connetdb.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
-[ApiController]
-[Route("[controller]")]
-public class AuthController : ControllerBase
+namespace ConnetDB.Controllers
 {
-    private readonly AppDbContext _context;
-
-    public AuthController(AppDbContext context)
+    [ApiController]
+    [Route("api/[controller]")]
+    public class AuthController : ControllerBase
     {
-        _context = context;
-    }
+        private readonly AppDbContext _context;
+        private readonly IConfiguration _config;
 
-    // POST /Auth/Login
-    [HttpPost("Login")]
-    public async Task<ActionResult> Login([FromBody] LoginRequest request)
-    {
-        // Tìm user theo username
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == request.Username);
-
-        // So sánh password trực tiếp (plain text)
-        if (user == null || user.Password != request.Password)
+        public AuthController(AppDbContext context, IConfiguration config)
         {
-            return Unauthorized(new { message = "Username or password is incorrect" });
+            _context = context;
+            _config = config;
         }
 
-        // Nếu login thành công, trả về thông tin user (chưa dùng JWT)
-        return Ok(new
+        // POST: api/auth/login
+        [HttpPost("login")]
+        public async Task<ActionResult> Login([FromBody] LoginRequest request)
         {
-            message = "Login successful",
-            user = new
-            {
-                user.Id,
-                user.Username,
-                user.Email
-            }
-        });
-    }
-}
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Username == request.Username);
 
-// DTO cho login
-public class LoginRequest
-{
-    public string Username { get; set; } = string.Empty;
-    public string Password { get; set; } = string.Empty;
+            if (user == null)
+                return Unauthorized(new { message = "Sai tài khoản hoặc mật khẩu" });
+
+            // 🔥 So sánh password đã hash
+            bool isValid = BCrypt.Net.BCrypt.Verify(request.Password, user.Password);
+
+            if (!isValid)
+                return Unauthorized(new { message = "Sai tài khoản hoặc mật khẩu" });
+
+            var token = GenerateJwtToken(user);
+
+            return Ok(new
+            {
+                message = "Login thành công",
+                token = token
+            });
+        }
+
+        private string GenerateJwtToken(User user)
+        {
+            var jwtKey = _config["Jwt:Key"];
+
+            var key = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwtKey)
+            );
+
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.Name, user.Username),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+
+                // 🔥 QUAN TRỌNG: thêm ROLE
+                new Claim(ClaimTypes.Role, user.Role.ToUpper())
+            };
+
+            var token = new JwtSecurityToken(
+                issuer: "ConnetDB",
+                audience: "ConnetDB",
+                claims: claims,
+                expires: DateTime.Now.AddHours(2),
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+    }
+
+    // DTO
+    public class LoginRequest
+    {
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
 }
