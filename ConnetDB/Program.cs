@@ -1,73 +1,6 @@
-﻿//using Microsoft.EntityFrameworkCore;
-
-//using connetdb.Data;
-//using ConnetDB.Middleware;
-//var builder = WebApplication.CreateBuilder(args);
-//// Đăng ký SQL Server
-//builder.Services.AddDbContext<AppDbContext>(options =>
-
-//options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-//builder.Services.AddControllers();
-//builder.Services.AddEndpointsApiExplorer();
-//builder.Services.AddSwaggerGen();
-//var app = builder.Build();
-//// Cấu hình Middleware
-//if (app.Environment.IsDevelopment())
-//{
-//    app.UseSwagger();
-//    app.UseSwaggerUI();
-//}
-//app.UseHttpsRedirection();
-//app.UseMiddleware<ExceptionMiddleware>();
-//app.MapControllers();
-//app.Run();
-
-//using Microsoft.EntityFrameworkCore;
-//using connetdb.Data;
-//using ConnetDB.Middleware;
-
-//var builder = WebApplication.CreateBuilder(args);
-
-//// ===== Đăng ký DbContext với SQL Server =====
-//builder.Services.AddDbContext<AppDbContext>(options =>
-//    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-//// ===== Đăng ký Controllers và Swagger =====
-//builder.Services.AddControllers();
-//builder.Services.AddEndpointsApiExplorer();
-//builder.Services.AddSwaggerGen();
-
-//// ===== Nếu cần JWT Authentication (nếu thêm AuthController) =====
-//// builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-////     .AddJwtBearer(options => { ... });
-
-//// ===== Build app =====
-//var app = builder.Build();
-
-//// ===== Middleware =====
-//if (app.Environment.IsDevelopment())
-//{
-//    app.UseSwagger();
-//    app.UseSwaggerUI();
-//}
-
-//app.UseHttpsRedirection();
-
-//// Middleware tùy chỉnh xử lý lỗi
-//app.UseMiddleware<ExceptionMiddleware>();
-
-//// Nếu dùng authentication
-//// app.UseAuthentication();
-//// app.UseAuthorization();
-
-//app.MapControllers();
-
-//app.Run();
-
-using connetdb.Data;           // Namespace của AppDbContext
-using ConnetDB.Middleware;     // Namespace của ExceptionMiddleware
+﻿using connetdb.Data;
+using ConnetDB.Middleware;
 using Microsoft.EntityFrameworkCore;
-using Npgsql;                   // Thêm using này
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -78,19 +11,19 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseNpgsql(connectionString, npgsqlOptions =>
     {
-        npgsqlOptions.EnableRetryOnFailure();   // Tự động retry khi mất kết nối (rất quan trọng trên cloud)
+        npgsqlOptions.EnableRetryOnFailure();
     });
 });
+
+// ===== CORS (FIX CHUẨN) =====
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowReact",
+    options.AddPolicy("AllowAll",
         policy => policy
-            .WithOrigins("http://localhost:3001")
+            .AllowAnyOrigin()   // ⚡ cho phép tất cả (dev + deploy)
             .AllowAnyMethod()
             .AllowAnyHeader());
 });
-
-
 
 // ===== Controllers + Swagger =====
 builder.Services.AddControllers();
@@ -101,6 +34,7 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 var app = builder.Build();
+
 // ===== Auto Migrate Database =====
 using (var scope = app.Services.CreateScope())
 {
@@ -108,32 +42,35 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = services.GetRequiredService<AppDbContext>();
-        context.Database.Migrate();   // Tự động tạo bảng + cập nhật schema
+        context.Database.Migrate();
         Console.WriteLine("Database migrated successfully.");
     }
     catch (Exception ex)
     {
         Console.WriteLine($"Error migrating database: {ex.Message}");
-        // Có thể throw lại nếu muốn app crash rõ ràng
     }
 }
 
-// ===== Swagger (luôn bật để test dễ dàng) =====
-app.UseCors("AllowReact");
+// ===== MIDDLEWARE (THỨ TỰ RẤT QUAN TRỌNG) =====
+
+// ⚡ CORS phải đặt sớm
+app.UseCors("AllowAll");
+
+// ⚡ Exception middleware nên đặt trước controller
+app.UseMiddleware<ExceptionMiddleware>();
+
+// ===== Swagger =====
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "ConnetDB API v1");
-    c.RoutePrefix = "swagger";        // Truy cập Swagger tại /swagger
+    c.RoutePrefix = "swagger";
 });
 
-// app.UseHttpsRedirection();        // Comment hoặc bỏ vì Render free không cần HTTPS redirection
+// app.UseHttpsRedirection(); // có thể bỏ
 
-
-
-//app.UseAuthorization();
+// app.UseAuthorization();
 
 app.MapControllers();
-app.UseMiddleware<ExceptionMiddleware>();
-// ===== Chạy ứng dụng =====
+
 app.Run();
