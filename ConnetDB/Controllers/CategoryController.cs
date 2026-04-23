@@ -25,7 +25,7 @@ namespace connetdb.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(Category model)
+        public async Task<ActionResult<Category>> Create(Category model)
         {
             _context.Categories.Add(model);
             await _context.SaveChangesAsync();
