@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("[controller]")]
 public class ProductController : ControllerBase
 {
     private readonly AppDbContext _context;
