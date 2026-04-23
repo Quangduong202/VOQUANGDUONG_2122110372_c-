@@ -15,12 +15,6 @@ var key = Encoding.UTF8.GetBytes(jwtKey);
 // ===== DbContext - PostgreSQL =====
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
-// ❗ CHECK NULL tránh crash
-if (string.IsNullOrEmpty(connectionString))
-{
-    throw new Exception("❌ Connection string is NULL. Check Environment Variables on Render.");
-}
-
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseNpgsql(connectionString, npgsqlOptions =>
@@ -74,6 +68,7 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { Title = "ConnetDB API", Version = "v1" });
 
+    // 🔥 Swagger JWT
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         In = ParameterLocation.Header,
@@ -100,7 +95,7 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// ===== AUTO MIGRATE DATABASE =====
+// ===== Auto Migrate Database =====
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -108,12 +103,11 @@ using (var scope = app.Services.CreateScope())
     {
         var context = services.GetRequiredService<AppDbContext>();
         context.Database.Migrate();
-        Console.WriteLine("✅ Database migrated successfully.");
+        Console.WriteLine("Database migrated successfully.");
     }
     catch (Exception ex)
     {
-        Console.WriteLine("❌ Error migrating database:");
-        Console.WriteLine(ex.ToString()); // 🔥 in full lỗi
+        Console.WriteLine($"Error migrating database: {ex.Message}");
     }
 }
 
@@ -122,10 +116,9 @@ app.UseCors("AllowAll");
 
 app.UseMiddleware<ExceptionMiddleware>();
 
-app.UseAuthentication();
-app.UseAuthorization();
+app.UseAuthentication();   // 🔥 BẮT BUỘC
+app.UseAuthorization();    // 🔥 BẮT BUỘC
 
-// ===== SWAGGER =====
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
@@ -137,8 +130,4 @@ app.UseSwaggerUI(c =>
 
 app.MapControllers();
 
-// ===== FIX PORT FOR RENDER (QUAN TRỌNG NHẤT) =====
-var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-Console.WriteLine($"🚀 App running on port: {port}");
-
-app.Run($"http://0.0.0.0:{port}");
+app.Run();

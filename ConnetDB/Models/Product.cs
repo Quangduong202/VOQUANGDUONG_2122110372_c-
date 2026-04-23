@@ -1,5 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace connetdb.Models
 {
@@ -8,25 +8,31 @@ namespace connetdb.Models
         [Key]
         public int Id { get; set; }
 
-        [Required, StringLength(200)]
+        [Required, StringLength(100)]
         public string Name { get; set; } = string.Empty;
 
-        public string? Description { get; set; }
+        [Required]
+        public string Image { get; set; } = string.Empty;
 
-        [Column(TypeName = "decimal(18,2)")]
-        public decimal Price { get; set; }
+        public int Price { get; set; }
+        public int OldPrice { get; set; }
 
-        public int Stock { get; set; }
+        [Required]
+        public string Description { get; set; } = string.Empty;
+
+        public string Specification { get; set; } = string.Empty;
+        public string BuyTurn { get; set; } = string.Empty;
+
+        public int Quantity { get; set; }
 
         // FK
+        public int BrandId { get; set; }
+        public Brand? Brand { get; set; }
+
         public int CategoryId { get; set; }
         public Category? Category { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
-
         // Navigation
-        //public ICollection<OrderItem>? OrderItems { get; set; }
-        //public ICollection<CartItem>? CartItems { get; set; }
-        //public ICollection<Review>? Reviews { get; set; }
+        public ICollection<ProductImage>? Images { get; set; }
     }
 }

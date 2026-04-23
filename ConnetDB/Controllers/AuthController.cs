@@ -63,7 +63,7 @@ namespace ConnetDB.Controllers
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
 
                 // 🔥 QUAN TRỌNG: thêm ROLE
-                new Claim(ClaimTypes.Role, user.Role.ToUpper())
+                new Claim(ClaimTypes.Role, user.Role.ToString())
             };
 
             var token = new JwtSecurityToken(

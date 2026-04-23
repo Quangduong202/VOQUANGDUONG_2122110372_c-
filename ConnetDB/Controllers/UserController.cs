@@ -1,16 +1,12 @@
 ﻿using connetdb.Data;
 using connetdb.Models;
-
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.CodeAnalysis.Scripting;
 using Microsoft.EntityFrameworkCore;
 
 namespace ConnetDB.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    //[Authorize] // 🔥 tất cả API phải login
     public class UserController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -20,8 +16,7 @@ namespace ConnetDB.Controllers
             _context = context;
         }
 
-        // ✅ Chỉ Admin mới xem được danh sách user
-        //[Authorize(Roles = "ADMIN")]
+        // GET ALL
         [HttpGet]
         public async Task<ActionResult<IEnumerable<object>>> GetAll()
         {
@@ -29,68 +24,122 @@ namespace ConnetDB.Controllers
                 .Select(u => new
                 {
                     u.Id,
-                    u.Username,
-                    u.Password,
                     u.Email,
+                    u.Username,
                     u.Role,
-                    u.CreatedAt
+                    u.Avatar,
+                    u.Phone
                 })
                 .ToListAsync();
 
             return Ok(users);
         }
 
-        // ✅ Admin hoặc chính user đó mới xem được
+        // GET BY ID
         [HttpGet("{id}")]
         public async Task<ActionResult> GetById(int id)
         {
-            var currentUser = User.Identity.Name;
-            var currentRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
-
             var user = await _context.Users.FindAsync(id);
             if (user == null) return NotFound();
-
-            // 🔥 Check quyền
-            //if (currentRole != "ADMIN" && user.Username != currentUser)
-            //    return Forbid();
 
             return Ok(new
             {
                 user.Id,
-                user.Username,
-                user.Password,
                 user.Email,
+                user.   Username,
                 user.Role,
-                user.CreatedAt
+                user.Avatar,
+                user.Phone
             });
         }
 
-        // ✅ Ai cũng đăng ký được
-        [AllowAnonymous]
+        // CREATE
         [HttpPost]
         public async Task<ActionResult> Create(User user)
         {
-            // 🔥 Hash password (QUAN TRỌNG)
+            // validate email
+            if (string.IsNullOrEmpty(user.Email))
+                return BadRequest("Email không được để trống");
+
+            // check email tồn tại
+            if (await _context.Users.AnyAsync(u => u.Email == user.Email))
+                return BadRequest("Email đã tồn tại");
+
+            // validate phone INT
+            if (user.Phone <= 0)
+                return BadRequest("Số điện thoại không hợp lệ");
+
+            // validate password
+            if (string.IsNullOrEmpty(user.Password))
+                return BadRequest("Password không được để trống");
+
+            // hash password
             user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
 
-            // 🔥 mặc định role = USER
-            //user.Role = "USER";
-
-            user.CreatedAt = DateTime.UtcNow;
-
             _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetById), new { id = user.Id }, new
+            {
+                user.Id,
+                user.Email,
+                user.Username,
+                user.Role,
+                user.Phone
+            });
+        }
+
+        // UPDATE
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, User updatedUser)
+        {
+            var user = await _context.Users.FindAsync(id);
+            if (user == null) return NotFound();
+
+            // check email trùng (trừ chính nó)
+            if (!string.IsNullOrEmpty(updatedUser.Email))
+            {
+                var exist = await _context.Users
+                    .AnyAsync(u => u.Email == updatedUser.Email && u.Id != id);
+
+                if (exist)
+                    return BadRequest("Email đã tồn tại");
+
+                user.Email = updatedUser.Email;
+            }
+
+            if (!string.IsNullOrEmpty(updatedUser.Username))
+                user.Username = updatedUser.Username;
+
+            if (!string.IsNullOrEmpty(updatedUser.Avatar))
+                user.Avatar = updatedUser.Avatar;
+
+            // update phone INT
+            if (updatedUser.Phone > 0)
+                user.Phone = updatedUser.Phone;
+
+            // update role
+            user.Role = updatedUser.Role;
+
+            // update password nếu có
+            if (!string.IsNullOrEmpty(updatedUser.Password))
+            {
+                user.Password = BCrypt.Net.BCrypt.HashPassword(updatedUser.Password);
+            }
+
             await _context.SaveChangesAsync();
 
             return Ok(new
             {
                 user.Id,
-                user.Username,
                 user.Email,
-                user.Role
+                user.Username,
+                user.Role,
+                user.Phone
             });
         }
-        // ✅ Chỉ ADMIN được xoá
-        //[Authorize(Roles = "ADMIN")]
+
+        // DELETE
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
@@ -103,46 +152,6 @@ namespace ConnetDB.Controllers
             return Ok(new
             {
                 message = "Xoá user thành công"
-            });
-        }
-        // ✅ Admin hoặc chính user đó mới được sửa
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, User updatedUser)
-        {
-            var currentUser = User.Identity?.Name;
-            //var currentRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
-
-            var user = await _context.Users.FindAsync(id);
-            if (user == null) return NotFound();
-
-            //// 🔥 Check quyền
-            //if (currentRole != "ADMIN" && user.Username != currentUser)
-            //    return Forbid();
-
-            // 🔥 Update field (KHÔNG update password ở đây nếu không cần)
-            user.Username = updatedUser.Username ?? user.Username;
-            user.Email = updatedUser.Email ?? user.Email;
-
-            // 🔥 Chỉ ADMIN mới được đổi role
-            //if (currentRole == "ADMIN" && !string.IsNullOrEmpty(updatedUser.Role))
-            //{
-            //    user.Role = updatedUser.Role.ToUpper();
-            //}
-
-            // 🔥 Nếu có đổi password thì hash lại
-            if (!string.IsNullOrEmpty(updatedUser.Password))
-            {
-                user.Password = BCrypt.Net.BCrypt.HashPassword(updatedUser.Password);
-            }
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new
-            {
-                user.Id,
-                user.Username,
-                user.Email,
-                user.Role
             });
         }
     }

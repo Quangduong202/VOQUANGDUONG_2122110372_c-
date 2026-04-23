@@ -2,13 +2,13 @@
 
 namespace connetdb.Models
 {
-    public class Category
+    public class Brand
     {
         [Key]
         public int Id { get; set; }
 
         [Required, StringLength(100)]
-        public string Name { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
 
         [Required]
         public string Image { get; set; } = string.Empty;

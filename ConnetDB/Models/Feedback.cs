@@ -2,17 +2,20 @@
 
 namespace connetdb.Models
 {
-    public class CartItem
+    public class Feedback
     {
         [Key]
         public int Id { get; set; }
 
-        public int CartId { get; set; }
-        public Cart? Cart { get; set; }
-
         public int ProductId { get; set; }
         public Product? Product { get; set; }
 
-        public int Quantity { get; set; }
+        public int UserId { get; set; }
+        public User? User { get; set; }
+
+        public int Star { get; set; }
+
+        [Required]
+        public string Content { get; set; } = string.Empty;
     }
 }

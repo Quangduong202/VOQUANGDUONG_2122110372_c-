@@ -1,5 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace connetdb.Models
 {
@@ -11,16 +10,13 @@ namespace connetdb.Models
         public int UserId { get; set; }
         public User? User { get; set; }
 
-        [Column(TypeName = "decimal(18,2)")]
-        public decimal TotalPrice { get; set; }
+        [Required, StringLength(50)]
+        public string SessionId { get; set; } = string.Empty;
 
-        [StringLength(50)]
-        public string Status { get; set; } = "pending"; // pending, paid, shipped, completed, cancelled
+        public string Note { get; set; } = string.Empty;
 
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public int Total { get; set; }
 
-        // Navigation
-        //public ICollection<OrderItem>? OrderItems { get; set; }
-        //public ICollection<Payment>? Payments { get; set; }
+        public ICollection<OrderDetail>? OrderDetails { get; set; }
     }
 }

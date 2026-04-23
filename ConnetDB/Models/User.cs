@@ -1,29 +1,19 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 
-namespace connetdb.Models
+public class User
 {
-    public class User
-    {
-        [Key]
-        public int Id { get; set; }
+    public int Id { get; set; }
 
-        [Required, StringLength(100)]
-        public string Username { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
 
-        [Required, StringLength(255)]
-        public string Email { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
 
-        [Required, StringLength(255)]
-        public string Password { get; set; } = string.Empty;
+    public string Username { get; set; } = string.Empty;
 
-        [Required, StringLength(50)]
-        public string Role { get; set; } = string.Empty; // admin, customer
+    public int Role { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+    public string Avatar { get; set; } = string.Empty;
 
-        // Navigation
-        //public ICollection<Order>? Orders { get; set; }
-        //public ICollection<Cart>? Carts { get; set; }
-        //public ICollection<Review>? Reviews { get; set; }
-    }
+    [Column("phone")]
+    public int Phone { get; set; }
 }
