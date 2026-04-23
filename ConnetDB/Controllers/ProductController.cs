@@ -39,7 +39,7 @@ public class ProductController : ControllerBase
 
     // CREATE
     [HttpPost]
-    public async Task<ActionResult<Product>> Create(Product product)
+    public async Task<IActionResult> Create([FromBody] Product product)
     {
         // check FK
         if (!await _context.Categories.AnyAsync(c => c.Id == product.CategoryId))
