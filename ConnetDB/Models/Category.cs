@@ -13,6 +13,6 @@ namespace connetdb.Models
         [Required]
         public string Image { get; set; } = string.Empty;
 
-        //public ICollection<Product>? Products { get; set; }
+        public ICollection<Product>? Products { get; set; }
     }
 }
