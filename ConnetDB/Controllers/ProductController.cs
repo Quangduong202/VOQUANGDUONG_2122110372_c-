@@ -40,11 +40,11 @@ public class ProductController : ControllerBase
     public async Task<IActionResult> Create([FromBody] Product product)
     {
         // check FK
-        if (!await _context.Categories.AnyAsync(c => c.Id == product.CategoryId))
-            return BadRequest("Category không tồn tại");
+        //if (!await _context.Categories.AnyAsync(c => c.Id == product.CategoryId))
+        //    return BadRequest("Category không tồn tại");
 
-        if (!await _context.Brands.AnyAsync(b => b.Id == product.BrandId))
-            return BadRequest("Brand không tồn tại");
+        //if (!await _context.Brands.AnyAsync(b => b.Id == product.BrandId))
+        //    return BadRequest("Brand không tồn tại");
 
         _context.Products.Add(product);
         await _context.SaveChangesAsync();
