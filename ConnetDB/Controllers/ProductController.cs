@@ -45,7 +45,10 @@ public class ProductController : ControllerBase
 
         //if (!await _context.Brands.AnyAsync(b => b.Id == product.BrandId))
         //    return BadRequest("Brand không tồn tại");
-
+        if (string.IsNullOrEmpty(product.Image))
+        {
+            product.Image = "no-image.jpg";
+        }
         _context.Products.Add(product);
         await _context.SaveChangesAsync();
 
