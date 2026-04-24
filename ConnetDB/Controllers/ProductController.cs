@@ -19,8 +19,7 @@ public class ProductController : ControllerBase
     public async Task<ActionResult<IEnumerable<Product>>> GetAll()
     {
         return Ok(await _context.Products
-            .Include(p => p.Category)
-            .Include(p => p.Brand)
+           
             .ToListAsync());
     }
 
@@ -29,8 +28,7 @@ public class ProductController : ControllerBase
     public async Task<ActionResult<Product>> GetById(int id)
     {
         var product = await _context.Products
-            .Include(p => p.Category)
-            .Include(p => p.Brand)
+         
             .FirstOrDefaultAsync(p => p.Id == id);
 
         if (product == null) return NotFound();
